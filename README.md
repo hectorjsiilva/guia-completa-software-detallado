@@ -1,0 +1,1 @@
+# guia-completa-software-detallado
