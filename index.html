@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix Azul - Héctor</title>
+    <style>
+        /* Reset y estilos base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #02060F;
+            color: #AEEBFF;
+            overflow: hidden;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Canvas de fondo para el efecto Matrix */
+        #matrix-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            opacity: 0.6;
+        }
+
+        /* Canvas verde para pantalla de expiración */
+        #matrix-canvas.green {
+            opacity: 0.8;
+        }
+
+        /* Contenedor principal de contenido */
+        .content-wrapper {
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* Estilos para las pantallas */
+        .screen {
+            display: none;
+            max-width: 700px;
+            width: 100%;
+            padding: 40px;
+            background: rgba(2, 6, 15, 0.85);
+            border: 2px solid #00C8FF;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 200, 255, 0.3);
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Texto con efecto typing */
+        .screen-text {
+            font-size: 18px;
+            line-height: 1.8;
+            margin-bottom: 30px;
+            white-space: pre-wrap;
+            min-height: 200px;
+        }
+
+        /* Cursor parpadeante para efecto typing */
+        .typing-cursor {
+            display: inline-block;
+            width: 10px;
+            height: 20px;
+            background-color: #00C8FF;
+            margin-left: 2px;
+            animation: blink 0.7s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% {
+                opacity: 1;
+            }
+            51%, 100% {
+                opacity: 0;
+            }
+        }
+
+        /* Estilos de botones */
+        .btn {
+            display: inline-block;
+            padding: 15px 35px;
+            background-color: #11BFFF;
+            color: #02060F;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            box-shadow: 0 0 20px rgba(17, 191, 255, 0.4);
+        }
+
+        .btn:hover {
+            background-color: #4dd9ff;
+            box-shadow: 0 0 30px rgba(77, 217, 255, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        /* Responsive para móviles */
+        @media (max-width: 768px) {
+            .screen {
+                padding: 25px;
+                max-width: 95%;
+            }
+
+            .screen-text {
+                font-size: 16px;
+                line-height: 1.6;
+                min-height: 150px;
+            }
+
+            .btn {
+                padding: 12px 25px;
+                font-size: 14px;
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .screen {
+                padding: 20px;
+            }
+
+            .screen-text {
+                font-size: 14px;
+                line-height: 1.5;
+            }
+
+            .btn {
+                padding: 10px 20px;
+                font-size: 13px;
+            }
+        }
+
+        /* Efecto de carga en pantalla 5 */
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% {
+                content: '';
+            }
+            40% {
+                content: '.';
+            }
+            60% {
+                content: '..';
+            }
+            80%, 100% {
+                content: '...';
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Canvas para el efecto Matrix -->
+    <canvas id="matrix-canvas"></canvas>
+
+    <!-- Contenedor de contenido -->
+    <div class="content-wrapper">
+        
+        <!-- PANTALLA 1 -->
+        <div id="screen1" class="screen active">
+            <div id="text1" class="screen-text"></div>
+            <div class="btn-container">
+                <button class="btn" onclick="goToScreen(2)">Entrar al sistema</button>
+            </div>
+        </div>
+
+        <!-- PANTALLA 2 -->
+        <div id="screen2" class="screen">
+            <div id="text2" class="screen-text"></div>
+            <div class="btn-container">
+                <button class="btn" onclick="goToScreen(3)">Continuar</button>
+            </div>
+        </div>
+
+        <!-- PANTALLA 3 -->
+        <div id="screen3" class="screen">
+            <div id="text3" class="screen-text"></div>
+            <div class="btn-container">
+                <button class="btn" onclick="goToScreen(4)">Ver los escoltas</button>
+            </div>
+        </div>
+
+        <!-- PANTALLA 4 -->
+        <div id="screen4" class="screen">
+            <div id="text4" class="screen-text"></div>
+            <div class="btn-container">
+                <button class="btn" style="background-color: #00FF41; color: #02060F;" onclick="copyPrompt()">🛡️ Copiar Escolta 1</button>
+                <button class="btn" style="margin-top: 15px;" onclick="downloadPDF()">🛡️ Descargar Escolta 2</button>
+            </div>
+        </div>
+
+        <!-- PANTALLA 5 -->
+        <div id="screen5" class="screen">
+            <div id="text5" class="screen-text"></div>
+        </div>
+
+    </div>
+
+    <script>
+        // ============================================
+        // VARIABLES GLOBALES PARA RASTREAR ESCOLTAS
+        // ============================================
+        let escolta1Copiado = false;
+        let escolta2Descargado = false;
+
+        // ============================================
+        // EFECTO MATRIX EN EL CANVAS
+        // ============================================
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Ajustar el tamaño del canvas al tamaño de la ventana
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Caracteres para el efecto Matrix
+        const matrixChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()_+-=[]{}|;:,.<>?';
+        const fontSize = 14;
+        const columns = canvas.width / fontSize;
+        let matrixColor = '#00C8FF'; // Color inicial azul
+
+        // Array para almacenar la posición Y de cada columna
+        const drops = [];
+        for (let i = 0; i < columns; i++) {
+            drops[i] = Math.floor(Math.random() * canvas.height / fontSize);
+        }
+
+        // Función para dibujar el efecto Matrix
+        function drawMatrix() {
+            // Fondo semi-transparente para crear el efecto de desvanecimiento
+            ctx.fillStyle = 'rgba(2, 6, 15, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Color del texto (variable según la pantalla)
+            ctx.fillStyle = matrixColor;
+            ctx.font = fontSize + 'px Courier New';
+
+            // Dibujar los caracteres
+            for (let i = 0; i < drops.length; i++) {
+                const text = matrixChars[Math.floor(Math.random() * matrixChars.length)];
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                // Reiniciar la gota cuando llega al final o aleatoriamente
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+
+                drops[i]++;
+            }
+        }
+
+        // Actualizar el efecto Matrix cada 30ms
+        setInterval(drawMatrix, 30);
+
+        // Ajustar el canvas cuando se redimensiona la ventana
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const newColumns = canvas.width / fontSize;
+            drops.length = 0;
+            for (let i = 0; i < newColumns; i++) {
+                drops[i] = Math.floor(Math.random() * canvas.height / fontSize);
+            }
+        });
+
+        // ============================================
+        // EFECTO TYPING (ESCRITURA)
+        // ============================================
+        let currentTyping = null;
+
+        function typeText(elementId, text, speed = 35, callback = null) {
+            // Detener cualquier escritura en curso
+            if (currentTyping) {
+                clearTimeout(currentTyping);
+            }
+
+            const element = document.getElementById(elementId);
+            element.innerHTML = ''; // Limpiar contenido previo
+            
+            let index = 0;
+            const cursor = '<span class="typing-cursor"></span>';
+            
+            function type() {
+                if (index < text.length) {
+                    element.innerHTML = text.substring(0, index + 1) + cursor;
+                    index++;
+                    currentTyping = setTimeout(type, speed);
+                } else {
+                    element.innerHTML = text; // Remover el cursor al finalizar
+                    if (callback) {
+                        callback();
+                    }
+                }
+            }
+            
+            type();
+        }
+
+        // ============================================
+        // NAVEGACIÓN ENTRE PANTALLAS
+        // ============================================
+        function goToScreen(screenNumber) {
+            // Ocultar todas las pantallas
+            const screens = document.querySelectorAll('.screen');
+            screens.forEach(screen => screen.classList.remove('active'));
+
+            // Mostrar la pantalla solicitada
+            const targetScreen = document.getElementById('screen' + screenNumber);
+            targetScreen.classList.add('active');
+
+            // Scroll al inicio por si acaso
+            window.scrollTo(0, 0);
+
+            // Iniciar el efecto typing para la nueva pantalla
+            startScreenTyping(screenNumber);
+        }
+
+        // ============================================
+        // CONTENIDOS DE CADA PANTALLA
+        // ============================================
+        const screenTexts = {
+            1: `Bienvenido.
+Soy Héctor.
+
+Hoy te regalo 2 escoltas para tu negocio.
+
+No es motivación.
+Es dirección + acción para empezar desde 0.
+
+Haz clic abajo.`,
+
+            2: `Verificando punto de partida...
+→ 0 experiencia.
+→ 0 idea clara.
+→ 0 contactos.
+→ 0 inversión.
+
+Resultado detectado: parálisis.
+(normal, pero mortal si te quedas ahí)
+
+Solución: 2 escoltas.
+Te los doy en 30 segundos.`,
+
+            3: `No fue suerte.
+Fue tener un sistema.
+
+Te voy a dar EXACTAMENTE esto:
+
+ESCOLTA #1 → Prompt completo
+Para que ChatGPT te saque:
+
+mejores nichos 2026 (digital)
+
+dolores reales
+
+producto ideal y mensaje
+
+ESCOLTA #2 → PDF "Modo Inicio (14 días)"
+Plan diario para pasar de 0 a tu primer proyecto.`,
+
+            4: `¿Sabes qué es lo más raro?
+
+Que esta información nunca te la cuentan en la escuela, ni en YouTube, ni en ningún sitio.
+
+Por eso preparé estos 2 escoltas.
+
+No motivación barata.
+Estrategia real.
+Aplicable hoy mismo.
+
+Aquí tienes los 2 escoltas:`,
+
+            5: `Esto sirve, pero sirve si lo aplicas.
+
+Si no, no vale de nada.
+
+Héctor 📈`
+        };
+
+        // ============================================
+        // FUNCIÓN PARA DESCARGAR PDF
+        // ============================================
+        function downloadPDF() {
+            const link = document.createElement('a');
+            link.href = 'Informe_Escolta_2_Modo_Inicio_14_dias.pdf';
+            link.download = 'Escolta_2_Modo_Inicio_14_dias.pdf';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            alert('✅ Escolta 2 descargado 🛡️\n\nYa tienes el plan de 14 días para pasar de 0 a tu primer proyecto.');
+            
+            // Marcar como descargado
+            escolta2Descargado = true;
+            verificarAmbosEscoltas();
+        }
+
+        // ============================================
+        // VERIFICAR SI AMBOS ESCOLTAS FUERON USADOS
+        // ============================================
+        function verificarAmbosEscoltas() {
+            if (escolta1Copiado && escolta2Descargado) {
+                // Esperar 1 segundo y luego mostrar la pantalla 5
+                setTimeout(() => {
+                    goToScreen(5);
+                }, 1000);
+            }
+        }
+
+        // ============================================
+        // FUNCIÓN PARA COPIAR PROMPT
+        // ============================================
+        const prompt = `ACTÚA COMO:
+Eres un analista de mercado + estratega de producto digital (B2C y B2B) especializado en tendencias 2026. Tu trabajo NO es motivar; es dar un análisis práctico y accionable. Evita generalidades. Si una afirmación es una suposición, indícalo.
+
+CONTEXTO:
+Quiero identificar nichos potentes para vender un producto digital en 2026 (por ejemplo: curso, membresía, plantilla, toolkit, app ligera, newsletter premium, comunidad, pack de prompts, guía paso a paso, etc.).
+Mi objetivo es elegir 1–2 nichos con:
+- dolor claro y frecuente
+- disposición a pagar (sin que sea lujo)
+- facilidad de llegar al público (canales orgánicos)
+- posibilidad de entregar valor rápido (7–14 días)
+- demanda estable (no solo "moda" de 2 semanas)
+
+CONDICIONES Y RESTRICCIONES:
+- No quiero ideas genéricas tipo "fitness" o "marketing" sin sub-nicho y sin dolor concreto.
+- No quiero "hazte viral", "sé disciplinado" ni frases vacías.
+- No inventes datos como si fueran hechos. Si no hay datos, razona con lógica de mercado y dilo.
+- Prioriza nichos donde un producto digital pueda resolver una parte del problema sin necesitar consultoría 1:1.
+- El enfoque es "IA real, vida real, sin humo": concreto, directo, útil.
+
+PETICIÓN PRINCIPAL:
+Dame los 12 mejores nichos para vender algo digital en 2026 y, para cada nicho:
+1) Descripción clara del nicho (quién es y en qué situación está)
+2) Dolores principales (top 5) explicados en lenguaje humano (no técnico)
+3) Lo que ya pagan hoy (herramientas, soluciones, servicios) para validar willingness-to-pay
+4) Producto digital ideal (3 formatos posibles) + promesa realista (sin exagerar)
+5) Resultado tangible en 7–14 días (qué mejora concreta consiguen)
+6) Objeciones típicas y cómo responderlas sin humo
+7) Canales de adquisición orgánicos más probables (IG/TikTok/YouTube/Reddit/LinkedIn/SEO/Comunidades) y por qué
+8) Señales de que el nicho es malo (red flags)
+
+LENGUAJE:
+- Español de España, directo, joven, sin postureo.
+- Frases cortas. Cero "gurú".
+- Si usas términos técnicos, explícalos en una línea.
+
+ESTRUCTURA DE RESPUESTA (OBLIGATORIA):
+A) Resumen ejecutivo (máximo 10 líneas)
+   - 3 nichos top recomendados y por qué ganan
+   - 3 nichos "trampa" que parecen buenos pero no lo son
+
+B) Tabla comparativa (12 nichos)
+Columnas:
+- Nicho
+- Intensidad de dolor (1–10)
+- Disposición a pagar (1–10)
+- Facilidad de llegar (1–10)
+- Claridad de promesa (1–10)
+- Riesgo de moda/pasada (1–10, donde 10 = muy arriesgado)
+- Producto digital recomendado (1 línea)
+
+C) Fichas completas por nicho (12 fichas)
+Formato:
+- Nicho:
+- Perfil:
+- Dolor #1–#5:
+- Ya pagan por:
+- Producto digital (3 opciones):
+- Promesa realista:
+- Resultado 7–14 días:
+- Objeciones + respuestas:
+- Canales orgánicos:
+- Red flags:
+
+D) Selección final (elige 2)
+- Elige 2 nichos para empezar y justifica con 5 razones cada uno.
+- Define el "primer producto" para cada nicho: nombre, precio orientativo (rango), formato y temario en 7 bullets.
+
+E) Mensajería lista para usar
+Para cada uno de los 2 nichos elegidos:
+- 5 hooks (agresivos pero coherentes)
+- 3 ideas de reels (demo/antes-después)
+- 1 landing en 8 líneas (copy directo)
+- 3 DMs de validación (sin vender)
+
+ANTES DE EMPEZAR, HAZME 5 PREGUNTAS OBLIGATORIAS:
+1) ¿A quién quiero vender? (B2C, B2B o mixto)
+2) ¿Cuánto tiempo puedo dedicar a crear el producto? (horas/semana)
+3) ¿Tengo alguna habilidad o ventaja? (ej. IA, diseño, edición, código, copy)
+4) ¿Precio objetivo? (low ticket 9–49€, mid 79–299€, high 500€+)
+5) ¿Qué temas NO quiero tocar? (límites)
+
+Cuando responda, ejecutas todo el análisis.`;
+
+        function copyPrompt() {
+            navigator.clipboard.writeText(prompt).then(() => {
+                alert('✅ Escolta 1 copiado 🛡️\n\nAhora pégalo en ChatGPT y obtendrás el análisis de los mejores nichos de 2026.');
+                
+                // Marcar como copiado
+                escolta1Copiado = true;
+                verificarAmbosEscoltas();
+            }).catch(err => {
+                alert('Error al copiar. Intenta de nuevo.');
+                console.error(err);
+            });
+        }
+
+        // ============================================
+        function startScreenTyping(screenNumber) {
+            const text = screenTexts[screenNumber];
+            const elementId = 'text' + screenNumber;
+
+            if (screenNumber === 4) {
+                // Pantalla 4: Matrix con emojis de aliens
+                canvas.classList.add('green');
+                matrixColor = '#00C8FF';
+                typeText(elementId, text, 35);
+            } else if (screenNumber === 5) {
+                // Pantalla 5: mensaje final
+                canvas.classList.remove('green');
+                matrixColor = '#00C8FF';
+                typeText(elementId, text, 35);
+            } else {
+                // Otras pantallas: asegurar que Matrix sea azul
+                canvas.classList.remove('green');
+                matrixColor = '#00C8FF';
+                typeText(elementId, text, 35);
+            }
+        }
+        
+
+        // ============================================
+        // INICIALIZACIÓN
+        // ============================================
+        window.addEventListener('DOMContentLoaded', () => {
+            // Iniciar el efecto typing en la primera pantalla
+            startScreenTyping(1);
+        });
+    </script>
+</body>
+</html>
